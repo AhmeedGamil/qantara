@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/qantara_logo.png" alt="Qantara" width="300">
+  <img src="https://raw.githubusercontent.com/ahmeedgamil/qantara/main/assets/qantara_logo.png" alt="Qantara" width="300">
   <br>
   <em>An arched bridge between your coding agents.</em>
 </p>

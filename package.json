@@ -13,6 +13,14 @@
   ],
   "license": "MIT",
   "author": "Ahmed Gamil <ahmed.gamil.codes@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahmeedgamil/qantara.git"
+  },
+  "homepage": "https://github.com/ahmeedgamil/qantara#readme",
+  "bugs": {
+    "url": "https://github.com/ahmeedgamil/qantara/issues"
+  },
   "type": "module",
   "bin": {
     "qantara": "dist/cli.js"
@@ -24,6 +32,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
     "dev": "tsc -p tsconfig.json --watch",
     "start": "node dist/server.js"
   },
