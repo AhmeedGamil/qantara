@@ -1,6 +1,6 @@
 {
   "name": "qantara",
-  "version": "0.3.0",
+  "version": "0.1.0",
   "description": "Qantara (arched bridge): an MCP bridge that lets coding agents (Claude Code, Codex, Gemini) delegate tasks to each other.",
   "keywords": [
     "mcp",

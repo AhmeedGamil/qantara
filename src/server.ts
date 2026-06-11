@@ -114,7 +114,7 @@ function elapsedSec(job: Job): number {
 async function main() {
   const server = new McpServer({
     name: "qantara",
-    version: "0.3.0",
+    version: "0.1.0",
   });
 
   const runners = exposedRunners([...config.expose]);
