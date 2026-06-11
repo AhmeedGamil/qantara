@@ -128,7 +128,8 @@ BRIDGE_EXPOSE = "claude"
 | ------------------ | ----------------------------------------------- | ------------------------------------------------ |
 | `task`             | string (required)                               | The work to delegate. Include all context — the agent sees nothing else. |
 | `cwd`              | string                                          | Working directory for the agent (set it to your project to work on the same files). |
-| `continue_session` | boolean                                         | Resume the last session with this agent (follow-ups, answering its questions). |
+| `continue_session` | boolean                                         | Resume the last session with this agent (sequential shorthand). |
+| `session_id`       | string                                          | Resume an exact session (id from a result's footer). Takes precedence over `continue_session`; use with parallel sessions. |
 | `background`       | boolean                                         | Don't block: returns a job id immediately. Poll with `check_job`. For long tasks. |
 | `model`            | string                                          | Override the model (e.g. `gpt-5.5`, `opus`).     |
 | `reasoning`        | `low` \| `medium` \| `high`                     | Maps to Codex `model_reasoning_effort` / Claude `--effort`. |
@@ -232,6 +233,7 @@ node mcp-test.mjs         # connects an MCP client, lists tools, calls one
 node mcp-test-claude.mjs  # drives the claude runner through MCP
 node mcp-test-gemini.mjs  # drives the gemini runner through MCP
 node mcp-test-jobs.mjs    # background jobs: start, poll, result, cancel, list
+node mcp-test-session.mjs # explicit resume: teach a word, resume by session_id
 ```
 
 ## Roadmap

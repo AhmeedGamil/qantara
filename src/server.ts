@@ -36,7 +36,17 @@ function buildInputShape(runner: AgentRunner) {
       .boolean()
       .optional()
       .describe(
-        "If true, resume the most recent session with this agent instead of starting fresh.",
+        "If true, resume the most recent session with this agent instead of " +
+          "starting fresh. With parallel sessions, prefer session_id — this " +
+          "shorthand resumes whichever session finished last.",
+      ),
+    session_id: z
+      .string()
+      .optional()
+      .describe(
+        "Resume this exact session (the id from a previous result's footer). " +
+          "Takes precedence over continue_session. Use when running parallel " +
+          "sessions with the same agent.",
       ),
     model: z
       .string()
@@ -132,9 +142,10 @@ async function main() {
           };
         }
 
-        const sessionId = args.continue_session
-          ? getLastSession(runner.name)
-          : undefined;
+        // Explicit session id wins; continue_session is the sequential shorthand.
+        const sessionId =
+          args.session_id ??
+          (args.continue_session ? getLastSession(runner.name) : undefined);
 
         // A resumed session already saw the preamble on its first turn.
         const task =
