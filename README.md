@@ -1,6 +1,6 @@
-# qantara — قنطرة
+# qantara
 
-*Qantara (Arabic: قنطرة) — an arched stone bridge.*
+*Qantara — an arched stone bridge.*
 
 An MCP server that lets coding agents **delegate tasks to each other**. Claude Code can
 hand a task to Codex or Gemini, Codex can hand a task to Claude, and the design extends
