@@ -15,10 +15,12 @@ import { ExecError } from "./exec.js";
 import { debug } from "./debug.js";
 import { codexRunner } from "./runners/codex.js";
 import { claudeRunner } from "./runners/claude.js";
+import { geminiRunner } from "./runners/gemini.js";
 
 // --- Register all available agents. Adding a new backend = one more line. ---
 register(codexRunner);
 register(claudeRunner);
+register(geminiRunner);
 
 function buildInputShape(runner: AgentRunner) {
   const shape: Record<string, z.ZodTypeAny> = {

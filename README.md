@@ -48,6 +48,8 @@ questions instead of guessing** when a task is ambiguous; answer them with a
 - The agent CLIs you want to bridge, installed and logged in:
   - `npm i -g @anthropic-ai/claude-code` (`claude`)
   - `npm i -g @openai/codex` (`codex`)
+  - `npm i -g @google/gemini-cli` (`gemini`) — log in by running `gemini` once
+    interactively (Google account), or set `GEMINI_API_KEY`
 
 ## Build
 
@@ -164,7 +166,7 @@ Set these in the host's MCP registration (see above). They are read once at star
 
 | Variable                  | Default           | Purpose                                              |
 | ------------------------- | ----------------- | ---------------------------------------------------- |
-| `BRIDGE_EXPOSE`           | `all`             | Comma list of agents to expose (`codex`, `claude`).  |
+| `BRIDGE_EXPOSE`           | `all`             | Comma list of agents to expose (`codex`, `claude`, `gemini`). |
 | `BRIDGE_MAX_DEPTH`        | `3`               | Max agent→agent recursion depth (loop guard).        |
 | `BRIDGE_TIMEOUT_MS`       | `600000`          | Timeout per blocking call (10 min).                  |
 | `BRIDGE_JOB_TIMEOUT_MS`   | `3600000`         | Timeout per background job (1 h).                    |
@@ -172,6 +174,8 @@ Set these in the host's MCP registration (see above). They are read once at star
 | `BRIDGE_CLARIFY`          | `1`               | Tell delegated agents to ask instead of guess. `0` to disable. |
 | `BRIDGE_SANDBOX`          | `workspace-write` | Codex sandbox (`read-only`/`workspace-write`/`danger-full-access`). |
 | `BRIDGE_CLAUDE_PERMISSION`| `acceptEdits`     | Claude permission mode (`bypassPermissions` for full autonomy). |
+| `BRIDGE_GEMINI_APPROVAL`  | `auto_edit`       | Gemini approval mode (`default`/`auto_edit`/`yolo`/`plan`). |
+| `BRIDGE_GEMINI_MODEL`     | (CLI default)     | Default Gemini model.                                |
 | `BRIDGE_CODEX_MODEL`      | (CLI default)     | Default Codex model.                                 |
 | `BRIDGE_CODEX_REASONING`  | (CLI default)     | Default Codex reasoning effort.                      |
 | `BRIDGE_CLAUDE_MODEL`     | (CLI default)     | Default Claude model.                                |
@@ -191,6 +195,10 @@ Set these in the host's MCP registration (see above). They are read once at star
 - **Claude delegate:** `acceptEdits` auto-approves file edits but refuses Bash commands
   outside your allowlist (headless mode cannot prompt). `bypassPermissions` removes all
   gates — use deliberately.
+- **Gemini delegate:** `auto_edit` auto-approves edits; shell commands are denied (no
+  prompt is possible headless). `yolo` approves everything. The bridge passes
+  `--skip-trust` so gemini's folder-trust feature doesn't silently downgrade the
+  approval mode — your `BRIDGE_GEMINI_APPROVAL` is the single source of policy.
 - **Loop guard:** `BRIDGE_DEPTH` is threaded into each spawned child and incremented; at
   `BRIDGE_MAX_DEPTH` further `ask_*` calls are refused, so A→B→A→B recursion cannot burn
   your subscriptions. There is no per-session call-count or cost budget yet — the host
@@ -205,6 +213,8 @@ Set these in the host's MCP registration (see above). They are read once at star
 | `codex exec` hangs on "Reading additional input from stdin..." | When scripting Codex, close stdin (`$null | codex exec …` in PowerShell, `codex exec … < /dev/null` in sh). |
 | `continue_session` doesn't resume across separate `codex exec` runs | Session ids live in the bridge process's memory; each headless run spawns a fresh bridge. Works as expected in interactive hosts. |
 | A blocking call dies at 10 minutes | Use `background: true` (1 h budget), or raise `BRIDGE_TIMEOUT_MS`. |
+| `ask_gemini` fails with exit code 41 / "set an Auth method" | The gemini CLI isn't logged in. Run `gemini` once interactively, or set `GEMINI_API_KEY` in the bridge's env block. |
+| Gemini `continue_session` doesn't find the session | Gemini sessions are project-scoped (keyed by cwd) — resume only works with the same `cwd` as the original call. |
 
 ## Adding another agent
 
@@ -220,6 +230,8 @@ No changes to the MCP layer or core are needed — an `ask_<name>` tool appears 
 node smoke.mjs            # calls each runner directly with a trivial task
 node mcp-test.mjs         # connects an MCP client, lists tools, calls one
 node mcp-test-claude.mjs  # drives the claude runner through MCP
+node mcp-test-gemini.mjs  # drives the gemini runner through MCP
+node mcp-test-jobs.mjs    # background jobs: start, poll, result, cancel, list
 ```
 
 ## Roadmap
@@ -228,7 +240,7 @@ node mcp-test-claude.mjs  # drives the claude runner through MCP
   reviewable diff instead of editing the shared tree.
 - Live progress for background jobs (parse the child's JSON stream incrementally).
 - Per-session call-count / cost budget guard.
-- More adapters (Gemini CLI, Aider, …).
+- More adapters (Aider, …). Gemini CLI is already included.
 
 ## License
 

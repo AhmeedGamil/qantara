@@ -55,6 +55,13 @@ export const config = {
     permissionMode: process.env.BRIDGE_CLAUDE_PERMISSION ?? "acceptEdits",
     model: process.env.BRIDGE_CLAUDE_MODEL, // undefined => CLI default
   },
+
+  /** Gemini execution settings. */
+  gemini: {
+    // default | auto_edit | yolo | plan — auto_edit mirrors Claude's acceptEdits.
+    approvalMode: process.env.BRIDGE_GEMINI_APPROVAL ?? "auto_edit",
+    model: process.env.BRIDGE_GEMINI_MODEL, // undefined => CLI default
+  },
 } as const;
 
 /** Env to pass to a spawned child agent so depth increments and propagates. */
