@@ -4,6 +4,17 @@ All notable changes to qantara are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-06-12
+
+### Added
+- `wait_job` tool: blocks until a background job finishes, then returns its
+  full result — the reliable way to collect a job without a polling loop.
+  Blocks up to `BRIDGE_WAIT_CAP_MS` (default 8 min, kept under host tool
+  timeouts) per call, then reports still-running.
+- Job notices: when a finished background job's result hasn't been read yet,
+  a reminder is appended to the next answer the bridge returns, whatever the
+  call was. Notices stop once the result is delivered.
+
 ## [0.1.0] — 2026-06-11
 
 Initial release.

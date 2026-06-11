@@ -160,15 +160,31 @@ Blocking calls time out after `BRIDGE_TIMEOUT_MS` (10 min default). For anything
 might run longer, use `background: true` — background jobs get `BRIDGE_JOB_TIMEOUT_MS`
 (1 h default) and the caller keeps working while they run.
 
-### `check_job` / `cancel_job` — manage background jobs
+### `wait_job` / `check_job` / `cancel_job` — manage background jobs
 
-- `check_job` with a `job_id`: status, and the agent's full result once finished.
+- `wait_job`: **the reliable way to collect a job** — blocks until the job
+  finishes, then returns its full result. Use it when there's no other work
+  left, instead of a polling loop that can be forgotten. Blocks up to
+  `BRIDGE_WAIT_CAP_MS` (~8 min) per call, then reports still-running — just
+  call it again.
+- `check_job` with a `job_id`: non-blocking status, and the full result once
+  finished.
 - `check_job` without arguments: list all jobs of the session.
 - `cancel_job`: kill a running job.
 
-Jobs live in the bridge process's memory: they last for your host session and are gone
-after a restart. There is no push notification (MCP is request/response) — the caller
-polls between its own steps.
+**Job notices:** the bridge cannot push messages (MCP servers only answer),
+so when a job finishes and its result hasn't been read yet, a reminder rides
+along on the next answer the bridge gives — whatever the call was:
+
+```
+[qantara] notice: background job "codex-2" (codex) finished 45s ago and is
+unread — call check_job with job_id "codex-2".
+```
+
+Notices stop once the result has been delivered.
+
+Jobs live in the bridge process's memory: they last for your host session and
+are gone after a restart.
 
 ## Working on the same project
 
@@ -192,6 +208,7 @@ Set these in the host's MCP registration (see above). They are read once at star
 | `BRIDGE_MAX_DEPTH`        | `3`               | Max agent→agent recursion depth (loop guard).        |
 | `BRIDGE_TIMEOUT_MS`       | `600000`          | Timeout per blocking call (10 min).                  |
 | `BRIDGE_JOB_TIMEOUT_MS`   | `3600000`         | Timeout per background job (1 h).                    |
+| `BRIDGE_WAIT_CAP_MS`      | `480000`          | Max block per `wait_job` call (8 min).               |
 | `BRIDGE_MAX_OUTPUT_BYTES` | `1000000`         | Output cap (protects the caller's context).          |
 | `BRIDGE_CLARIFY`          | `1`               | Tell delegated agents to ask instead of guess. `0` to disable. |
 | `BRIDGE_SANDBOX`          | `workspace-write` | Codex sandbox (`read-only`/`workspace-write`/`danger-full-access`). |

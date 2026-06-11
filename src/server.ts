@@ -103,18 +103,73 @@ function formatResult(
   return `${text}${meta}`;
 }
 
-function textResult(text: string, isError = false) {
-  return { ...(isError ? { isError: true } : {}), content: [{ type: "text" as const, text }] };
+/**
+ * Job notices: the bridge cannot speak first (MCP servers only answer), so
+ * "your background job finished" reminders ride along on whatever answer is
+ * already being returned. A job stops generating notices once its full
+ * result has been delivered (job.delivered).
+ */
+function jobNotices(): string {
+  const lines = listJobs()
+    .filter((j) => !j.delivered && (j.status === "done" || j.status === "failed"))
+    .map((j) => {
+      const ago = Math.round((Date.now() - (j.finishedAt ?? Date.now())) / 1000);
+      return (
+        `[qantara] notice: background job "${j.id}" (${j.agent}) ` +
+        `${j.status === "done" ? "finished" : "FAILED"} ${ago}s ago and is ` +
+        `unread — call check_job with job_id "${j.id}".`
+      );
+    });
+  return lines.length ? `\n\n${lines.join("\n")}` : "";
+}
+
+function textResult(text: string, isError = false, notices = true) {
+  const suffix = notices ? jobNotices() : "";
+  return {
+    ...(isError ? { isError: true } : {}),
+    content: [{ type: "text" as const, text: `${text}${suffix}` }],
+  };
 }
 
 function elapsedSec(job: Job): number {
   return Math.round(((job.finishedAt ?? Date.now()) - job.startedAt) / 1000);
 }
 
+/** Shared status→response logic for check_job and wait_job. */
+function jobStatusResult(job: Job) {
+  switch (job.status) {
+    case "running":
+      return textResult(
+        `Job "${job.id}" (${job.agent}) is still running (${elapsedSec(job)}s elapsed). ` +
+          `Check again later.`,
+      );
+    case "done":
+      job.delivered = true;
+      return textResult(
+        `Job "${job.id}" (${job.agent}) finished in ${elapsedSec(job)}s:\n\n` +
+          formatResult(
+            job.agent,
+            job.result!.text,
+            job.result!.sessionId,
+            job.result!.cost,
+            job.result!.truncated,
+          ),
+      );
+    case "failed":
+      job.delivered = true;
+      return textResult(
+        `Job "${job.id}" (${job.agent}) failed after ${elapsedSec(job)}s: ${job.error}`,
+        true,
+      );
+    case "cancelled":
+      return textResult(`Job "${job.id}" (${job.agent}) was cancelled.`);
+  }
+}
+
 async function main() {
   const server = new McpServer({
     name: "qantara",
-    version: "0.1.0",
+    version: "0.2.0",
   });
 
   const runners = exposedRunners([...config.expose]);
@@ -164,7 +219,7 @@ async function main() {
 
         if (args.background) {
           const job = createJob(runner.name, args.task);
-          runner
+          job.completion = runner
             .run(task, {
               ...runOpts,
               timeoutMs: config.jobTimeoutMs,
@@ -186,8 +241,9 @@ async function main() {
           debug(`job ${job.id} started`);
           return textResult(
             `Started background job "${job.id}" (${runner.name}). It runs while you ` +
-              `continue working. Poll it with check_job (job_id: "${job.id}"); ` +
-              `cancel with cancel_job. Jobs do not survive a host restart.`,
+              `continue working. Poll it with check_job (job_id: "${job.id}"), or — ` +
+              `when you have no other work left — call wait_job to block until it ` +
+              `finishes. Cancel with cancel_job. Jobs do not survive a host restart.`,
           );
         }
 
@@ -230,7 +286,8 @@ async function main() {
             (j) =>
               `${j.id} | ${j.agent} | ${j.status} | ${elapsedSec(j)}s | ${j.taskSummary}`,
           );
-          return textResult(lines.join("\n"));
+          // The list is itself a status overview; notices would be redundant.
+          return textResult(lines.join("\n"), false, false);
         }
         const job = getJob(args.job_id);
         if (!job) {
@@ -239,31 +296,34 @@ async function main() {
             true,
           );
         }
-        switch (job.status) {
-          case "running":
-            return textResult(
-              `Job "${job.id}" (${job.agent}) is still running (${elapsedSec(job)}s elapsed). ` +
-                `Check again later.`,
-            );
-          case "done":
-            return textResult(
-              `Job "${job.id}" (${job.agent}) finished in ${elapsedSec(job)}s:\n\n` +
-                formatResult(
-                  job.agent,
-                  job.result!.text,
-                  job.result!.sessionId,
-                  job.result!.cost,
-                  job.result!.truncated,
-                ),
-            );
-          case "failed":
-            return textResult(
-              `Job "${job.id}" (${job.agent}) failed after ${elapsedSec(job)}s: ${job.error}`,
-              true,
-            );
-          case "cancelled":
-            return textResult(`Job "${job.id}" (${job.agent}) was cancelled.`);
+        return jobStatusResult(job);
+      },
+    );
+
+    server.tool(
+      "wait_job",
+      "Wait for a background delegation job to finish, then return its full " +
+        "result — the reliable way to collect a job once you have no other " +
+        "work to do (no polling loop to forget). Blocks up to ~8 minutes per " +
+        "call; if it returns still-running, simply call wait_job again.",
+      {
+        job_id: z.string().describe("The job id to wait for."),
+      },
+      async (args: any) => {
+        const job = getJob(args.job_id);
+        if (!job) {
+          return textResult(
+            `No job "${args.job_id}". Call check_job without job_id to list jobs.`,
+            true,
+          );
         }
+        if (job.status === "running" && job.completion) {
+          await Promise.race([
+            job.completion,
+            new Promise((resolve) => setTimeout(resolve, config.waitCapMs)),
+          ]);
+        }
+        return jobStatusResult(job);
       },
     );
 

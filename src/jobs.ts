@@ -17,6 +17,10 @@ export interface Job {
   finishedAt?: number;
   result?: RunResult;
   error?: string;
+  /** True once the full result/error has been returned to the caller. */
+  delivered?: boolean;
+  /** Settles when the job finishes (success or failure); used by wait_job. */
+  completion?: Promise<void>;
   abort: AbortController;
 }
 

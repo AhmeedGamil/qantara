@@ -25,6 +25,12 @@ export const config = {
   timeoutMs: num("BRIDGE_TIMEOUT_MS", 600_000),
   /** Hard timeout per background job (longer: jobs don't block the caller). */
   jobTimeoutMs: num("BRIDGE_JOB_TIMEOUT_MS", 3_600_000),
+  /**
+   * Max time a single wait_job call blocks before returning a still-running
+   * status. Kept safely below typical host tool timeouts (e.g. Codex's 600 s)
+   * so the host never kills the call itself.
+   */
+  waitCapMs: num("BRIDGE_WAIT_CAP_MS", 480_000),
   /** Max bytes of captured output, to protect the calling model's context. */
   maxOutputBytes: num("BRIDGE_MAX_OUTPUT_BYTES", 1_000_000),
 
