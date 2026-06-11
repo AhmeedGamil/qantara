@@ -5,9 +5,7 @@
 </p>
 
 <p align="center">
-  <!-- After `npm publish`, replace this static badge with the dynamic one:
-       <a href="https://www.npmjs.com/package/qantara"><img alt="npm" src="https://img.shields.io/npm/v/qantara"></a> -->
-  <img alt="version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-blue">
+  <a href="https://www.npmjs.com/package/qantara"><img alt="npm version" src="https://img.shields.io/npm/v/qantara"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
   <img alt="Node.js >= 18" src="https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white">
