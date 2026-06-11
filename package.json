@@ -12,6 +12,7 @@
     "delegation"
   ],
   "license": "MIT",
+  "author": "Ahmed Gamil <ahmed.gamil.codes@gmail.com>",
   "type": "module",
   "bin": {
     "agent-bridge": "dist/server.js"
