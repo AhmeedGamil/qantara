@@ -83,7 +83,7 @@ function buildInputShape(runner: AgentRunner) {
  * only on fresh sessions (a resumed session already saw it).
  */
 const CLARIFY_PREAMBLE =
-  "[agent-bridge] You were delegated this task by another AI agent, which can " +
+  "[qantara] You were delegated this task by another AI agent, which can " +
   "answer follow-up questions. If the task is ambiguous or missing information " +
   "you need, do NOT guess: reply with your specific questions instead of doing " +
   "the work, and the caller will resume this session with answers.";
@@ -113,8 +113,8 @@ function elapsedSec(job: Job): number {
 
 async function main() {
   const server = new McpServer({
-    name: "agent-bridge",
-    version: "0.1.0",
+    name: "qantara",
+    version: "0.3.0",
   });
 
   const runners = exposedRunners([...config.expose]);
@@ -134,7 +134,7 @@ async function main() {
               {
                 type: "text" as const,
                 text:
-                  `Refused: agent-bridge recursion depth ${config.depth} has reached ` +
+                  `Refused: qantara recursion depth ${config.depth} has reached ` +
                   `the limit (BRIDGE_MAX_DEPTH=${config.maxDepth}). ` +
                   `This prevents runaway agent-to-agent loops.`,
               },
@@ -293,11 +293,11 @@ async function main() {
   // Announce readiness on stderr (stdout is reserved for the MCP protocol).
   const names = runners.map((r) => `ask_${r.name}`).join(", ");
   process.stderr.write(
-    `agent-bridge ready (depth ${config.depth}/${config.maxDepth}); tools: ${names || "none"}\n`,
+    `qantara ready (depth ${config.depth}/${config.maxDepth}); tools: ${names || "none"}\n`,
   );
 }
 
 main().catch((err) => {
-  process.stderr.write(`agent-bridge fatal: ${err?.stack ?? err}\n`);
+  process.stderr.write(`qantara fatal: ${err?.stack ?? err}\n`);
   process.exit(1);
 });

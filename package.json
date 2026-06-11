@@ -1,7 +1,7 @@
 {
-  "name": "agent-bridge",
-  "version": "0.2.0",
-  "description": "MCP bridge that lets coding agents (Claude Code, Codex, ...) delegate tasks to each other.",
+  "name": "qantara",
+  "version": "0.3.0",
+  "description": "Qantara (قنطرة, arched bridge): an MCP bridge that lets coding agents (Claude Code, Codex, Gemini) delegate tasks to each other.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -15,7 +15,7 @@
   "author": "Ahmed Gamil <ahmed.gamil.codes@gmail.com>",
   "type": "module",
   "bin": {
-    "agent-bridge": "dist/server.js"
+    "qantara": "dist/cli.js"
   },
   "files": [
     "dist",

@@ -1,16 +1,34 @@
-# agent-bridge
+# qantara — قنطرة
+
+*Qantara (Arabic: قنطرة) — an arched stone bridge.*
 
 An MCP server that lets coding agents **delegate tasks to each other**. Claude Code can
-hand a task to Codex, Codex can hand a task to Claude, and the design extends to any other
-agent (Gemini, Aider, …) by adding a small adapter.
+hand a task to Codex or Gemini, Codex can hand a task to Claude, and the design extends
+to any other agent (Aider, …) by adding a small adapter.
 
-It works by shelling out to each tool's **headless CLI** (`claude -p`, `codex exec`), so it
-**reuses your existing CLI logins** — no extra API keys, no separate per-token billing.
+It works by shelling out to each tool's **headless CLI** (`claude -p`, `codex exec`,
+`gemini -p`), so it **reuses your existing CLI logins** — no extra API keys, no separate
+per-token billing.
 
 ```
-Claude Code ──(MCP tool: ask_codex)──► agent-bridge ──► codex exec --json ──► Codex
-Codex       ──(MCP tool: ask_claude)─► agent-bridge ──► claude -p --json ──► Claude Code
+Claude Code ──(MCP tool: ask_codex)──► qantara ──► codex exec --json ──► Codex
+Codex       ──(MCP tool: ask_claude)─► qantara ──► claude -p --json ──► Claude Code
+Gemini      ──(MCP tool: ask_codex)──► qantara ──► ...
 ```
+
+## Setup (one command)
+
+```powershell
+npm i -g qantara     # or run from a clone: npm install && npm run build
+qantara setup        # detects claude/codex/gemini, registers the bridge in each
+```
+
+`setup` detects which agent CLIs are installed, registers qantara into each host
+(exposing the *other* agents as tools), pre-approves the tools so nothing prompts,
+and forwards your proxy env to Codex if you have one. It backs up every file it
+touches (`*.qantara.bak`), is idempotent, and `qantara setup --dry-run` shows the
+plan without writing. Restart your hosts afterwards — MCP servers load at session
+start. The sections below describe what it writes, for manual setup or auditing.
 
 ## The control model
 
@@ -19,7 +37,7 @@ There is no central controller — control follows whoever you talk to:
 ```
 You (the human)
  └── Host agent — whichever one you opened (Claude Code OR Codex)
-      └── agent-bridge (dumb pipe, controls nothing)
+      └── qantara (dumb pipe, controls nothing)
            └── Delegated agent (contractor: gets a brief, works, reports, exits)
                 └── can delegate again, down to a depth limit
 ```
@@ -58,43 +76,33 @@ npm install
 npm run build
 ```
 
-## Registration
+## Manual registration (what `setup` writes)
 
-### Into Claude Code (gives Claude the `ask_codex` tool)
+### Into Claude Code (gives Claude `ask_codex` / `ask_gemini`)
 
 ```powershell
-claude mcp add -s user agent-bridge node "<path-to>/agent-bridge/dist/server.js"
+claude mcp add -s user qantara -e BRIDGE_EXPOSE=codex,gemini -- node "<path-to>/qantara/dist/server.js"
 ```
 
-Then in `~/.claude.json`, set the bridge's env so it exposes only the *other* agent:
-
-```json
-"env": { "BRIDGE_EXPOSE": "codex" }
-```
-
-To skip the per-session permission prompt, allowlist the tools in
-`~/.claude/settings.json`:
+To skip the per-session permission prompt, allowlist the server in
+`~/.claude/settings.json` (one entry covers all its tools):
 
 ```json
 {
   "permissions": {
-    "allow": [
-      "mcp__agent-bridge__ask_codex",
-      "mcp__agent-bridge__check_job",
-      "mcp__agent-bridge__cancel_job"
-    ]
+    "allow": ["mcp__qantara"]
   }
 }
 ```
 
-### Into Codex (gives Codex the `ask_claude` tool)
+### Into Codex (gives Codex `ask_claude` / `ask_gemini`)
 
 Add to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.agent-bridge]
+[mcp_servers.qantara]
 command = "node"
-args = ['<path-to>/agent-bridge/dist/server.js']
+args = ['<path-to>/qantara/dist/server.js']
 enabled = true
 startup_timeout_sec = 120
 tool_timeout_sec = 600
@@ -104,7 +112,7 @@ tool_timeout_sec = 600
 # Available since Codex 0.122.0.
 default_tools_approval_mode = "approve"
 
-[mcp_servers.agent-bridge.env]
+[mcp_servers.qantara.env]
 BRIDGE_EXPOSE = "claude"
 # Codex spawns MCP servers with a stripped environment (a fixed whitelist of
 # core OS vars). If your `claude` login needs a proxy (HTTP_PROXY/HTTPS_PROXY),
@@ -210,7 +218,7 @@ Set these in the host's MCP registration (see above). They are read once at star
 | Symptom | Cause / fix |
 | --- | --- |
 | Codex replies "user cancelled MCP tool call" | Headless Codex auto-cancels MCP approval prompts. Set `default_tools_approval_mode = "approve"` on the server entry in `~/.codex/config.toml`. |
-| Delegated `claude` fails: `API Error: 403 Request not allowed` | Your Anthropic traffic needs a proxy, and Codex stripped `HTTP_PROXY`/`HTTPS_PROXY` from the bridge's env. Re-declare them in `[mcp_servers.agent-bridge.env]`. |
+| Delegated `claude` fails: `API Error: 403 Request not allowed` | Your Anthropic traffic needs a proxy, and Codex stripped `HTTP_PROXY`/`HTTPS_PROXY` from the bridge's env. Re-declare them in `[mcp_servers.qantara.env]`. |
 | `codex exec` hangs on "Reading additional input from stdin..." | When scripting Codex, close stdin (`$null | codex exec …` in PowerShell, `codex exec … < /dev/null` in sh). |
 | `continue_session` doesn't resume across separate `codex exec` runs | Session ids live in the bridge process's memory; each headless run spawns a fresh bridge. Works as expected in interactive hosts. |
 | A blocking call dies at 10 minutes | Use `background: true` (1 h budget), or raise `BRIDGE_TIMEOUT_MS`. |
