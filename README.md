@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/qantara"><img alt="npm version" src="https://img.shields.io/npm/v/qantara"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
-  <img alt="Node.js >= 18" src="https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white">
+  <img alt="Node.js 18+" src="https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white">
   <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-8A2BE2">
   <img alt="Bridges Claude, Codex, Gemini" src="https://img.shields.io/badge/bridges-Claude%20%C2%B7%20Codex%20%C2%B7%20Gemini-FF6B35">
